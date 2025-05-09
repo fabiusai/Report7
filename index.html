@@ -128,7 +128,7 @@
     });
 
     document.getElementById('downloadBtn').addEventListener('click', function() {
-      const blob = new Blob(["\ufeff" + testoFinale.replace(/<[^>]*>/g, '')], { type: 'application/msword' });
+      const blob = new Blob([testoFinale.replace(/<[^>]*>/g, '')], { type: 'application/msword;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
