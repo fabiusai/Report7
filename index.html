@@ -115,20 +115,20 @@
 
         testoFinale =
           'Pubblicati ' + postCount + ' post che hanno ottenuto ' + formatNumberK(totalViews) + ' visualizzazioni organiche. ' +
-          'Tra questi, hanno realizzato il maggior traffico organico i post dedicati a: ' + topList + '.\n\nElenco argomenti trattati\n' +
+          'Tra questi, hanno realizzato il maggior traffico organico i post dedicati a: ' + topList + '.\n\n<b style="color:#003764">Elenco argomenti trattati</b>\n' +
           elenco;
 
-        document.getElementById('output').textContent = testoFinale;
+        document.getElementById('output').innerHTML = testoFinale;
       };
       reader.readAsArrayBuffer(file);
     });
 
     document.getElementById('copyBtn').addEventListener('click', function() {
-      navigator.clipboard.writeText(testoFinale).then(() => alert('Testo copiato!'));
+      navigator.clipboard.writeText(testoFinale.replace(/<[^>]*>/g, '')).then(() => alert('Testo copiato!'));
     });
 
     document.getElementById('downloadBtn').addEventListener('click', function() {
-      const blob = new Blob(["\ufeff" + testoFinale], { type: 'application/msword' });
+      const blob = new Blob(["\ufeff" + testoFinale.replace(/<[^>]*>/g, '')], { type: 'application/msword' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -139,4 +139,3 @@
   </script>
 </body>
 </html>
-
