@@ -2,74 +2,460 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Analisi Engagement Post</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="icon" type="image/png" href="seven.png">
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Titillium Web', sans-serif;
-      padding: 20px;
-      background-color: #f5f5f5;
-      color: #003764;
+    * {
       margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    h1 {
-      font-size: 2rem;
-      color: #003764;
-      margin-bottom: 20px;
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #f8f9fb 0%, #e8f0fe 100%);
+      color: #003B7A;
+      min-height: 100vh;
+      line-height: 1.6;
     }
-    #fileInput {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-bottom: 20px;
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
     }
-    #output {
-      margin-top: 20px;
-      background-color: #ffffff;
-      padding: 20px;
-      border-radius: 10px;
-      border-left: 5px solid #FFD200;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding: 2rem 0;
+      background: linear-gradient(135deg, #003B7A 0%, #0056B3 100%);
+      color: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 59, 122, 0.15);
+    }
+
+    .header h1 {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      font-weight: 400;
+    }
+
+    .upload-section {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 59, 122, 0.08);
+      border: 1px solid rgba(255, 210, 0, 0.2);
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #003B7A;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(135deg, #FFD200 0%, #FFA000 100%);
+      border-radius: 2px;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .file-input {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-input-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 1.5rem 2rem;
+      border: 2px dashed #FFD200;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #FFF9E6 0%, #FFFAEB 100%);
+      color: #003B7A;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      min-height: 80px;
+    }
+
+    .file-input-display:hover {
+      border-color: #FFA000;
+      background: linear-gradient(135deg, #FFF6D9 0%, #FFF3D4 100%);
+      transform: translateY(-2px);
+    }
+
+    .file-input-display.file-selected {
+      border-color: #4CAF50;
+      background: linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%);
+    }
+
+    .file-icon {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .results-section {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 59, 122, 0.08);
+      border: 1px solid rgba(255, 210, 0, 0.2);
+      display: none;
+    }
+
+    .results-section.visible {
+      display: block;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .result-block {
+      background: #F8F9FB;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid #FFD200;
+      position: relative;
+    }
+
+    .result-block:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .result-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #003B7A;
+    }
+
+    .result-content {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #2C3E50;
       white-space: pre-line;
     }
-    button {
-      margin-top: 10px;
-      margin-right: 10px;
-      background-color: #FFD200;
-      color: #003764;
+
+    .result-content .highlight {
+      color: #003B7A;
+      font-weight: 600;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
       border: none;
       border-radius: 8px;
-      padding: 10px 16px;
-      font-weight: 600;
+      font-weight: 500;
+      font-size: 0.9rem;
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      font-family: inherit;
+      min-width: 120px;
+      position: relative;
+      overflow: hidden;
     }
-    button:hover {
-      background-color: #e6bd00;
+
+    .btn-primary {
+      background: linear-gradient(135deg, #FFD200 0%, #FFA000 100%);
+      color: #003B7A;
     }
-    .button-container {
-      margin-top: 10px;
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #FFA000 0%, #FF8F00 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 210, 0, 0.3);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #003B7A 0%, #0056B3 100%);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #0056B3 0%, #007FFF 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 59, 122, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-icon {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .status-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.95);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-message.show {
+      opacity: 1;
+    }
+
+    .global-actions {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 59, 122, 0.08);
+      border: 1px solid rgba(255, 210, 0, 0.2);
+      display: none;
+    }
+
+    .global-actions.visible {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #F8F9FB 0%, #E8F0FE 100%);
+      padding: 1.5rem;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid rgba(255, 210, 0, 0.1);
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #003B7A;
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+      
+      .button-group {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+      
+      .result-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
-  <h1>Report Settimanale Social</h1>
-  <input type="file" id="fileInput" accept=".xlsx" />
-  <div class="button-container">
-    <button id="copyBtn">Copia Testo</button>
-    <button id="downloadBtn">Salva txt</button>
+  <div class="container">
+    <header class="header">
+      <h1>Report Settimanale Social</h1>
+      <p>Analisi completa dell'engagement e delle performance dei contenuti</p>
+    </header>
+
+    <section class="upload-section">
+      <h2 class="section-title">Caricamento Dati</h2>
+      <div class="file-input-wrapper">
+        <input type="file" id="fileInput" class="file-input" accept=".xlsx" />
+        <div class="file-input-display" id="fileInputDisplay">
+          <svg class="file-icon" viewBox="0 0 24 24">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+          </svg>
+          <span>Seleziona il file Excel (.xlsx) con i dati di engagement</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="results-section" id="resultsSection">
+      <h2 class="section-title">Risultati Analisi</h2>
+      
+      <div class="stats-grid" id="statsGrid" style="display: none;">
+        <div class="stat-card">
+          <span class="stat-number" id="postCount">0</span>
+          <span class="stat-label">Post Pubblicati</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number" id="totalViews">0</span>
+          <span class="stat-label">Visualizzazioni Totali</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number" id="topicsCount">0</span>
+          <span class="stat-label">Argomenti Trattati</span>
+        </div>
+      </div>
+
+      <div class="result-block">
+        <div class="result-header">
+          <h3 class="result-title">Riepilogo Performance</h3>
+          <div class="button-group">
+            <button class="btn btn-primary" id="copySummaryBtn">
+              <svg class="btn-icon" viewBox="0 0 24 24">
+                <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
+              </svg>
+              Copia Riepilogo
+              <span class="status-message" id="summaryStatus">Copiato!</span>
+            </button>
+          </div>
+        </div>
+        <div class="result-content" id="summaryOutput"></div>
+      </div>
+
+      <div class="result-block">
+        <div class="result-header">
+          <h3 class="result-title">Elenco Completo Argomenti</h3>
+          <div class="button-group">
+            <button class="btn btn-primary" id="copyTopicsBtn">
+              <svg class="btn-icon" viewBox="0 0 24 24">
+                <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
+              </svg>
+              Copia Elenco
+              <span class="status-message" id="topicsStatus">Copiato!</span>
+            </button>
+          </div>
+        </div>
+        <div class="result-content" id="topicsOutput"></div>
+      </div>
+    </section>
+
+    <section class="global-actions" id="globalActions">
+      <h2 class="section-title">Azioni Globali</h2>
+      <div class="button-group">
+        <button class="btn btn-secondary" id="copyAllBtn">
+          <svg class="btn-icon" viewBox="0 0 24 24">
+            <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
+          </svg>
+          Copia Tutto
+          <span class="status-message" id="allStatus">Tutto copiato!</span>
+        </button>
+        <button class="btn btn-secondary" id="downloadBtn">
+          <svg class="btn-icon" viewBox="0 0 24 24">
+            <path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
+          </svg>
+          Scarica Report
+          <span class="status-message" id="downloadStatus">Scaricato!</span>
+        </button>
+      </div>
+    </section>
   </div>
-  <div id="output"></div>
 
   <script>
-    let testoFinale = '';
+    let summaryText = '';
+    let topicsList = '';
+    let fullReport = '';
 
-    document.getElementById('fileInput').addEventListener('change', function(e) {
+    // File input handling
+    const fileInput = document.getElementById('fileInput');
+    const fileInputDisplay = document.getElementById('fileInputDisplay');
+    const resultsSection = document.getElementById('resultsSection');
+    const globalActions = document.getElementById('globalActions');
+    const statsGrid = document.getElementById('statsGrid');
+
+    fileInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
+
+      // Update UI to show file selected
+      fileInputDisplay.classList.add('file-selected');
+      fileInputDisplay.innerHTML = `
+        <svg class="file-icon" viewBox="0 0 24 24">
+          <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" />
+        </svg>
+        <span>${file.name} - Elaborazione in corso...</span>
+      `;
 
       const reader = new FileReader();
       reader.onload = function(event) {
@@ -78,66 +464,133 @@
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet);
 
-        const postCount = json.length;
-        const visualizzazioni = json.map(row => row["Total impressions"] ?? row["Video view count"] ?? 0);
-        const totalViews = visualizzazioni.reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
-
-        const labelMap = {};
-        json.forEach((row) => {
-          const labelsRaw = row["Labels"];
-          const views = parseFloat(row["Total impressions"] ?? row["Video view count"] ?? 0) || 0;
-          if (labelsRaw) {
-            const labels = labelsRaw.split(';')
-              .map(l => l.trim())
-              .filter(l => l && !l.startsWith('#'));
-            labels.forEach(label => {
-              labelMap[label] = (labelMap[label] || 0) + views;
-            });
-          }
-        });
-
-        const sortedLabels = Object.entries(labelMap)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3);
-
-        function formatNumberK(val) {
-          const num = val / 1000;
-          const formatted = num.toFixed(1).replace('.', ',');
-          return formatted.endsWith(',0') ? parseInt(num) + 'K' : formatted + 'K';
-        }
-
-        const topList = sortedLabels.map(([label, views]) => {
-          return label + ' (' + formatNumberK(views) + ' visualizzazioni)';
-        }).join(', ');
-
-        const allLabels = Object.keys(labelMap).sort();
-        const elenco = allLabels.join('\n');
-
-        testoFinale =
-          'Pubblicati ' + postCount + ' post che hanno ottenuto ' + formatNumberK(totalViews) + ' visualizzazioni organiche. ' +
-          'Tra questi, hanno realizzato il maggior traffico organico i post dedicati a: ' + topList + '.\n\n<b style="color:#003764">Elenco argomenti trattati</b>\n' +
-          elenco;
-
-        document.getElementById('output').innerHTML = testoFinale;
+        processData(json);
+        
+        // Update file input display
+        setTimeout(() => {
+          fileInputDisplay.innerHTML = `
+            <svg class="file-icon" viewBox="0 0 24 24">
+              <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" />
+            </svg>
+            <span>${file.name} - Elaborazione completata</span>
+          `;
+        }, 500);
       };
       reader.readAsArrayBuffer(file);
     });
 
-    document.getElementById('copyBtn').addEventListener('click', function() {
-      navigator.clipboard.writeText(testoFinale.replace(/<[^>]*>/g, '')).then(() => alert('Testo copiato!'));
+    function processData(json) {
+      const postCount = json.length;
+      const visualizzazioni = json.map(row => row["Total impressions"] ?? row["Video view count"] ?? 0);
+      const totalViews = visualizzazioni.reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+
+      const labelMap = {};
+      json.forEach((row) => {
+        const labelsRaw = row["Labels"];
+        const views = parseFloat(row["Total impressions"] ?? row["Video view count"] ?? 0) || 0;
+        if (labelsRaw) {
+          const labels = labelsRaw.split(';')
+            .map(l => l.trim())
+            .filter(l => l && !l.startsWith('#'));
+          labels.forEach(label => {
+            labelMap[label] = (labelMap[label] || 0) + views;
+          });
+        }
+      });
+
+      const sortedLabels = Object.entries(labelMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      function formatNumberK(val) {
+        const num = val / 1000;
+        const formatted = num.toFixed(1).replace('.', ',');
+        return formatted.endsWith(',0') ? parseInt(num) + 'K' : formatted + 'K';
+      }
+
+      const topList = sortedLabels.map(([label, views]) => {
+        return label + ' (' + formatNumberK(views) + ' visualizzazioni)';
+      }).join(', ');
+
+      const allLabels = Object.keys(labelMap).sort();
+
+      // Update stats
+      document.getElementById('postCount').textContent = postCount;
+      document.getElementById('totalViews').textContent = formatNumberK(totalViews);
+      document.getElementById('topicsCount').textContent = allLabels.length;
+
+      // Generate texts
+      summaryText = `Pubblicati ${postCount} post che hanno ottenuto ${formatNumberK(totalViews)} visualizzazioni organiche. Tra questi, hanno realizzato il maggior traffico organico i post dedicati a: ${topList}.`;
+      
+      topicsList = allLabels.join('\n');
+      
+      fullReport = summaryText + '\n\nElenco argomenti trattati:\n' + topicsList;
+
+      // Update outputs
+      document.getElementById('summaryOutput').innerHTML = summaryText;
+      document.getElementById('topicsOutput').innerHTML = `<span class="highlight">Elenco argomenti trattati:</span>\n${topicsList}`;
+
+      // Show results
+      statsGrid.style.display = 'grid';
+      resultsSection.classList.add('visible');
+      globalActions.classList.add('visible');
+      
+      // Add fade-in animation
+      setTimeout(() => {
+        resultsSection.classList.add('fade-in');
+        globalActions.classList.add('fade-in');
+      }, 100);
+    }
+
+    // Button handlers with status messages
+    function showStatus(buttonId, statusId) {
+      const button = document.getElementById(buttonId);
+      const status = document.getElementById(statusId);
+      
+      status.classList.add('show');
+      setTimeout(() => {
+        status.classList.remove('show');
+      }, 2000);
+    }
+
+    function copyToClipboard(text, buttonId, statusId) {
+      navigator.clipboard.writeText(text).then(() => {
+        showStatus(buttonId, statusId);
+      }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showStatus(buttonId, statusId);
+      });
+    }
+
+    document.getElementById('copySummaryBtn').addEventListener('click', function() {
+      copyToClipboard(summaryText, 'copySummaryBtn', 'summaryStatus');
+    });
+
+    document.getElementById('copyTopicsBtn').addEventListener('click', function() {
+      const topicsText = 'Elenco argomenti trattati:\n' + topicsList;
+      copyToClipboard(topicsText, 'copyTopicsBtn', 'topicsStatus');
+    });
+
+    document.getElementById('copyAllBtn').addEventListener('click', function() {
+      copyToClipboard(fullReport, 'copyAllBtn', 'allStatus');
     });
 
     document.getElementById('downloadBtn').addEventListener('click', function() {
-      const text = testoFinale.replace(/<[^>]*>/g, '');
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const blob = new Blob([fullReport], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = 'report_engagement.txt';
       a.click();
       URL.revokeObjectURL(url);
+      showStatus('downloadBtn', 'downloadStatus');
     });
   </script>
 </body>
 </html>
-
