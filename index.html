@@ -7,6 +7,7 @@
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="icon" type="image/png" href="seven.png">
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * {
@@ -311,6 +312,53 @@
       margin-top: 0.5rem;
     }
 
+    .charts-section {
+      margin: 2rem 0;
+      padding: 2rem;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 59, 122, 0.08);
+      border: 1px solid rgba(255, 210, 0, 0.2);
+    }
+
+    .charts-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .chart-container {
+      background: #F8F9FB;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      border: 1px solid rgba(255, 210, 0, 0.1);
+      height: 380px;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .chart-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #003B7A;
+      margin-bottom: 1rem;
+      flex-shrink: 0;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .chart-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
     @media (max-width: 768px) {
       .container {
         padding: 1rem;
@@ -327,6 +375,15 @@
       .result-header {
         flex-direction: column;
         align-items: stretch;
+      }
+
+      .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .chart-container {
+        padding: 1rem;
       }
     }
 
@@ -375,6 +432,30 @@
         <div class="stat-card">
           <span class="stat-number" id="topicsCount">0</span>
           <span class="stat-label">Argomenti Trattati</span>
+        </div>
+      </div>
+
+      <div class="charts-section" id="chartsSection" style="display: none;">
+        <h3 class="section-title">Top 3 Argomenti per Performance</h3>
+        <div class="charts-grid">
+          <div class="chart-container">
+            <h4 class="chart-title">Visualizzazioni per Argomento</h4>
+            <div class="chart-wrapper">
+              <canvas id="impressionsChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h4 class="chart-title">Interazioni per Argomento</h4>
+            <div class="chart-wrapper">
+              <canvas id="interactionsChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h4 class="chart-title">Like e Reazioni per Argomento</h4>
+            <div class="chart-wrapper">
+              <canvas id="likesChart"></canvas>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -443,6 +524,7 @@
     const resultsSection = document.getElementById('resultsSection');
     const globalActions = document.getElementById('globalActions');
     const statsGrid = document.getElementById('statsGrid');
+    const chartsSection = document.getElementById('chartsSection');
 
     fileInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -484,22 +566,32 @@
       const visualizzazioni = json.map(row => row["Total impressions"] ?? row["Video view count"] ?? 0);
       const totalViews = visualizzazioni.reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
 
+      // Processo i dati per argomento includendo tutte le metriche
       const labelMap = {};
       json.forEach((row) => {
         const labelsRaw = row["Labels"];
         const views = parseFloat(row["Total impressions"] ?? row["Video view count"] ?? 0) || 0;
+        const interactions = parseFloat(row["Total interactions"] ?? 0) || 0;
+        const likes = parseFloat(row["Total likes"] ?? row["Total reactions"] ?? 0) || 0;
+        
         if (labelsRaw) {
           const labels = labelsRaw.split(';')
             .map(l => l.trim())
             .filter(l => l && !l.startsWith('#'));
           labels.forEach(label => {
-            labelMap[label] = (labelMap[label] || 0) + views;
+            if (!labelMap[label]) {
+              labelMap[label] = { views: 0, interactions: 0, likes: 0 };
+            }
+            labelMap[label].views += views;
+            labelMap[label].interactions += interactions;
+            labelMap[label].likes += likes;
           });
         }
       });
 
+      // Ordino per visualizzazioni e prendo i top 3
       const sortedLabels = Object.entries(labelMap)
-        .sort((a, b) => b[1] - a[1])
+        .sort((a, b) => b[1].views - a[1].views)
         .slice(0, 3);
 
       function formatNumberK(val) {
@@ -508,8 +600,8 @@
         return formatted.endsWith(',0') ? parseInt(num) + 'K' : formatted + 'K';
       }
 
-      const topList = sortedLabels.map(([label, views]) => {
-        return label + ' (' + formatNumberK(views) + ' visualizzazioni)';
+      const topList = sortedLabels.map(([label, data]) => {
+        return label + ' (' + formatNumberK(data.views) + ' visualizzazioni)';
       }).join(', ');
 
       const allLabels = Object.keys(labelMap).sort();
@@ -518,6 +610,9 @@
       document.getElementById('postCount').textContent = postCount;
       document.getElementById('totalViews').textContent = formatNumberK(totalViews);
       document.getElementById('topicsCount').textContent = allLabels.length;
+
+      // Crea i grafici
+      createCharts(sortedLabels);
 
       // Generate texts
       summaryText = `Pubblicati ${postCount} post che hanno ottenuto ${formatNumberK(totalViews)} visualizzazioni organiche. Tra questi, hanno realizzato il maggior traffico organico i post dedicati a: ${topList}.`;
@@ -532,6 +627,7 @@
 
       // Show results
       statsGrid.style.display = 'grid';
+      chartsSection.style.display = 'block';
       resultsSection.classList.add('visible');
       globalActions.classList.add('visible');
       
@@ -539,6 +635,7 @@
       setTimeout(() => {
         resultsSection.classList.add('fade-in');
         globalActions.classList.add('fade-in');
+        chartsSection.classList.add('fade-in');
       }, 100);
     }
 
@@ -591,6 +688,218 @@
       URL.revokeObjectURL(url);
       showStatus('downloadBtn', 'downloadStatus');
     });
+
+    // Funzione per creare i grafici
+    function createCharts(sortedLabels) {
+      // Plugin personalizzato per etichette multilinea
+      const multilineLabelsPlugin = {
+        id: 'multilineLabels',
+        afterDraw: function(chart) {
+          const ctx = chart.ctx;
+          const xAxis = chart.scales.x;
+          const labels = sortedLabels.map(([label]) => label);
+          
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.font = '500 11px Inter, sans-serif';
+          ctx.fillStyle = '#003B7A';
+          
+          labels.forEach((label, index) => {
+            const x = xAxis.getPixelForValue(index);
+            const y = xAxis.bottom + 5;
+            
+            // Funzione per dividere il testo su più righe
+            function wrapText(text, maxWidth) {
+              const words = text.split(' ');
+              const lines = [];
+              let currentLine = words[0];
+              
+              for (let i = 1; i < words.length; i++) {
+                const word = words[i];
+                const width = ctx.measureText(currentLine + ' ' + word).width;
+                if (width < maxWidth) {
+                  currentLine += ' ' + word;
+                } else {
+                  lines.push(currentLine);
+                  currentLine = word;
+                }
+              }
+              lines.push(currentLine);
+              return lines;
+            }
+            
+            const maxWidth = Math.min(120, xAxis.width / labels.length - 10);
+            const lines = wrapText(label, maxWidth);
+            
+            lines.forEach((line, lineIndex) => {
+              ctx.fillText(line, x, y + lineIndex * 14);
+            });
+          });
+          
+          ctx.restore();
+        }
+      };
+
+      // Registra il plugin
+      Chart.register(multilineLabelsPlugin);
+
+      const labels = sortedLabels.map((_, index) => index); // Usa indici invece dei testi
+      const viewsData = sortedLabels.map(([, data]) => data.views);
+      const interactionsData = sortedLabels.map(([, data]) => data.interactions);
+      const likesData = sortedLabels.map(([, data]) => data.likes);
+
+      const chartColors = [
+        'rgba(255, 210, 0, 0.8)',
+        'rgba(0, 59, 122, 0.8)',
+        'rgba(255, 160, 0, 0.8)'
+      ];
+
+      const borderColors = [
+        'rgba(255, 210, 0, 1)',
+        'rgba(0, 59, 122, 1)',
+        'rgba(255, 160, 0, 1)'
+      ];
+
+      // Funzione per accorciare le etichette nei tooltip
+      function truncateLabel(label, maxLength = 40) {
+        return label.length > maxLength ? label.substring(0, maxLength) + '...' : label;
+      }
+
+      // Configurazione comune per tutti i grafici
+      const chartConfig = {
+        type: 'bar',
+        plugins: [multilineLabelsPlugin],
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            intersect: false,
+            mode: 'index'
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            multilineLabels: true,
+            tooltip: {
+              backgroundColor: 'rgba(0, 59, 122, 0.95)',
+              titleColor: '#FFD200',
+              bodyColor: '#FFFFFF',
+              borderColor: '#FFD200',
+              borderWidth: 1,
+              cornerRadius: 8,
+              padding: 12,
+              titleFont: {
+                size: 13,
+                weight: '600'
+              },
+              bodyFont: {
+                size: 12,
+                weight: '400'
+              },
+              callbacks: {
+                title: function(tooltipItems) {
+                  const index = tooltipItems[0].dataIndex;
+                  const fullLabel = sortedLabels[index][0];
+                  return truncateLabel(fullLabel);
+                },
+                label: function(context) {
+                  const value = context.parsed.y;
+                  const formattedValue = value >= 1000 ? 
+                    (value/1000).toFixed(1).replace('.', ',') + 'K' : 
+                    value.toLocaleString('it-IT');
+                  return `${formattedValue}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return value >= 1000 ? (value/1000).toFixed(1) + 'K' : value;
+                },
+                font: {
+                  size: 12
+                }
+              },
+              grid: {
+                color: 'rgba(0, 59, 122, 0.1)'
+              }
+            },
+            x: {
+              ticks: {
+                display: false // Nascondi le etichette native
+              },
+              grid: {
+                display: false
+              }
+            }
+          },
+          layout: {
+            padding: {
+              top: 15,
+              bottom: 50, // Spazio extra per le etichette multilinea
+              left: 15,
+              right: 15
+            }
+          },
+          elements: {
+            bar: {
+              borderRadius: 4,
+              borderSkipped: false
+            }
+          }
+        }
+      };
+
+      // Grafico Visualizzazioni
+      const impressionsCtx = document.getElementById('impressionsChart').getContext('2d');
+      new Chart(impressionsCtx, {
+        ...chartConfig,
+        data: {
+          labels: labels,
+          datasets: [{
+            data: viewsData,
+            backgroundColor: chartColors,
+            borderColor: borderColors,
+            borderWidth: 2
+          }]
+        }
+      });
+
+      // Grafico Interazioni
+      const interactionsCtx = document.getElementById('interactionsChart').getContext('2d');
+      new Chart(interactionsCtx, {
+        ...chartConfig,
+        data: {
+          labels: labels,
+          datasets: [{
+            data: interactionsData,
+            backgroundColor: chartColors,
+            borderColor: borderColors,
+            borderWidth: 2
+          }]
+        }
+      });
+
+      // Grafico Like e Reazioni
+      const likesCtx = document.getElementById('likesChart').getContext('2d');
+      new Chart(likesCtx, {
+        ...chartConfig,
+        data: {
+          labels: labels,
+          datasets: [{
+            data: likesData,
+            backgroundColor: chartColors,
+            borderColor: borderColors,
+            borderWidth: 2
+          }]
+        }
+      });
+    }
   </script>
 </body>
 </html>
