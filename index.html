@@ -696,7 +696,6 @@
       showStatus('downloadBtn', 'downloadStatus');
     });
 
-    // Aggiungi questa nuova funzione per generare il report HTML
     function generateHtmlReport() {
       const postCount = document.getElementById('postCount').textContent;
       const totalViews = document.getElementById('totalViews').textContent;
@@ -813,8 +812,21 @@
       margin: 2rem 0;
       border-left: 4px solid #FFD200;
     }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .result-card {
+      background: #F8F9FB;
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid rgba(0, 59, 122, 0.1);
+    }
     @media (max-width: 768px) {
-      .stats-grid {
+      .stats-grid, .results-grid {
         grid-template-columns: 1fr;
       }
       .container {
@@ -854,8 +866,19 @@
 
     <div class="section">
       <h2 class="section-title">Risultati complessivi</h2>
-      <div class="chart-container">
-        <img src="${impressionsImg}" alt="Visualizzazioni per Argomento">
+      <div class="results-grid">
+        <div class="result-card">
+          <span class="stat-number">${postCount}</span>
+          <span class="stat-label">Post Pubblicati</span>
+        </div>
+        <div class="result-card">
+          <span class="stat-number">${totalViews}</span>
+          <span class="stat-label">Visualizzazioni Totali</span>
+        </div>
+        <div class="result-card">
+          <span class="stat-number">${topicsCount}</span>
+          <span class="stat-label">Argomenti Trattati</span>
+        </div>
       </div>
     </div>
 
@@ -882,7 +905,6 @@
       return htmlContent;
     }
 
-    // Aggiungi questo nuovo event listener per il pulsante di download HTML
     document.getElementById('downloadHtmlBtn').addEventListener('click', function() {
       const htmlContent = generateHtmlReport();
       const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
@@ -895,9 +917,7 @@
       showStatus('downloadHtmlBtn', 'downloadHtmlStatus');
     });
 
-    // Funzione per creare i grafici
     function createCharts(sortedLabels) {
-      // Plugin personalizzato per etichette multilinea
       const multilineLabelsPlugin = {
         id: 'multilineLabels',
         afterDraw: function(chart) {
@@ -915,7 +935,6 @@
             const x = xAxis.getPixelForValue(index);
             const y = xAxis.bottom + 5;
             
-            // Funzione per dividere il testo su più righe
             function wrapText(text, maxWidth) {
               const words = text.split(' ');
               const lines = [];
@@ -947,10 +966,9 @@
         }
       };
 
-      // Registra il plugin
       Chart.register(multilineLabelsPlugin);
 
-      const labels = sortedLabels.map((_, index) => index); // Usa indici invece dei testi
+      const labels = sortedLabels.map((_, index) => index);
       const viewsData = sortedLabels.map(([, data]) => data.views);
       const interactionsData = sortedLabels.map(([, data]) => data.interactions);
       const likesData = sortedLabels.map(([, data]) => data.likes);
@@ -967,12 +985,10 @@
         'rgba(255, 160, 0, 1)'
       ];
 
-      // Funzione per accorciare le etichette nei tooltip
       function truncateLabel(label, maxLength = 40) {
         return label.length > maxLength ? label.substring(0, maxLength) + '...' : label;
       }
 
-      // Configurazione comune per tutti i grafici
       const chartConfig = {
         type: 'bar',
         plugins: [multilineLabelsPlugin],
@@ -1037,7 +1053,7 @@
             },
             x: {
               ticks: {
-                display: false // Nascondi le etichette native
+                display: false
               },
               grid: {
                 display: false
@@ -1047,7 +1063,7 @@
           layout: {
             padding: {
               top: 15,
-              bottom: 50, // Spazio extra per le etichette multilinea
+              bottom: 50,
               left: 15,
               right: 15
             }
