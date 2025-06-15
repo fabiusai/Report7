@@ -525,7 +525,6 @@
     let topicsList = '';
     let fullReport = '';
 
-    // File input handling
     const fileInput = document.getElementById('fileInput');
     const fileInputDisplay = document.getElementById('fileInputDisplay');
     const resultsSection = document.getElementById('resultsSection');
@@ -537,7 +536,6 @@
       const file = e.target.files[0];
       if (!file) return;
 
-      // Update UI to show file selected
       fileInputDisplay.classList.add('file-selected');
       fileInputDisplay.innerHTML = `
         <svg class="file-icon" viewBox="0 0 24 24">
@@ -555,7 +553,6 @@
 
         processData(json);
         
-        // Update file input display
         setTimeout(() => {
           fileInputDisplay.innerHTML = `
             <svg class="file-icon" viewBox="0 0 24 24">
@@ -573,7 +570,6 @@
       const visualizzazioni = json.map(row => row["Total impressions"] ?? row["Video view count"] ?? 0);
       const totalViews = visualizzazioni.reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
 
-      // Processo i dati per argomento includendo tutte le metriche
       const labelMap = {};
       json.forEach((row) => {
         const labelsRaw = row["Labels"];
@@ -596,7 +592,6 @@
         }
       });
 
-      // Ordino per visualizzazioni e prendo i top 3
       const sortedLabels = Object.entries(labelMap)
         .sort((a, b) => b[1].views - a[1].views)
         .slice(0, 3);
@@ -613,32 +608,26 @@
 
       const allLabels = Object.keys(labelMap).sort();
 
-      // Update stats
       document.getElementById('postCount').textContent = postCount;
       document.getElementById('totalViews').textContent = formatNumberK(totalViews);
       document.getElementById('topicsCount').textContent = allLabels.length;
 
-      // Crea i grafici
       createCharts(sortedLabels);
 
-      // Generate texts
       summaryText = `Pubblicati ${postCount} post che hanno ottenuto ${formatNumberK(totalViews)} visualizzazioni organiche. Tra questi, hanno realizzato il maggior traffico organico i post dedicati a: ${topList}.`;
       
       topicsList = allLabels.join('\n');
       
       fullReport = summaryText + '\n\nElenco argomenti trattati:\n' + topicsList;
 
-      // Update outputs
       document.getElementById('summaryOutput').innerHTML = summaryText;
       document.getElementById('topicsOutput').innerHTML = `<span class="highlight">Elenco argomenti trattati:</span>\n${topicsList}`;
 
-      // Show results
       statsGrid.style.display = 'grid';
       chartsSection.style.display = 'block';
       resultsSection.classList.add('visible');
       globalActions.classList.add('visible');
       
-      // Add fade-in animation
       setTimeout(() => {
         resultsSection.classList.add('fade-in');
         globalActions.classList.add('fade-in');
@@ -646,7 +635,6 @@
       }, 100);
     }
 
-    // Button handlers with status messages
     function showStatus(buttonId, statusId) {
       const button = document.getElementById(buttonId);
       const status = document.getElementById(statusId);
@@ -661,7 +649,6 @@
       navigator.clipboard.writeText(text).then(() => {
         showStatus(buttonId, statusId);
       }).catch(() => {
-        // Fallback for older browsers
         const textArea = document.createElement('textarea');
         textArea.value = text;
         document.body.appendChild(textArea);
@@ -702,7 +689,6 @@
       const topicsCount = document.getElementById('topicsCount').textContent;
       const summaryText = document.getElementById('summaryOutput').textContent;
       
-      // Prendi i canvas dei grafici e li convertiamo in immagini
       const impressionsCanvas = document.getElementById('impressionsChart');
       const interactionsCanvas = document.getElementById('interactionsChart');
       const likesCanvas = document.getElementById('likesChart');
@@ -767,13 +753,20 @@
       border-bottom: 2px solid #FFD200;
       padding-bottom: 0.5rem;
     }
-    .stats-grid {
+    .summary {
+      background: #F8F9FB;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      border-left: 4px solid #FFD200;
+    }
+    .results-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1rem;
       margin: 2rem 0;
     }
-    .stat-card {
+    .result-card {
       background: #F8F9FB;
       padding: 1.5rem;
       border-radius: 8px;
@@ -805,28 +798,8 @@
       margin: 1rem 0;
       color: #003B7A;
     }
-    .summary {
-      background: #F8F9FB;
-      padding: 1.5rem;
-      border-radius: 8px;
-      margin: 2rem 0;
-      border-left: 4px solid #FFD200;
-    }
-    .results-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-      margin: 2rem 0;
-    }
-    .result-card {
-      background: #F8F9FB;
-      padding: 1.5rem;
-      border-radius: 8px;
-      text-align: center;
-      border: 1px solid rgba(0, 59, 122, 0.1);
-    }
     @media (max-width: 768px) {
-      .stats-grid, .results-grid {
+      .results-grid {
         grid-template-columns: 1fr;
       }
       .container {
@@ -841,21 +814,6 @@
       <h1>Report Settimanale Social</h1>
       <p>Analisi dell'engagement e delle performance dei contenuti</p>
     </header>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <span class="stat-number">${postCount}</span>
-        <span class="stat-label">Post Pubblicati</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-number">${totalViews}</span>
-        <span class="stat-label">Visualizzazioni Totali</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-number">${topicsCount}</span>
-        <span class="stat-label">Argomenti Trattati</span>
-      </div>
-    </div>
 
     <div class="section">
       <h2 class="section-title">Riepilogo Performance</h2>
@@ -1077,7 +1035,6 @@
         }
       };
 
-      // Grafico Visualizzazioni
       const impressionsCtx = document.getElementById('impressionsChart').getContext('2d');
       new Chart(impressionsCtx, {
         ...chartConfig,
@@ -1092,7 +1049,6 @@
         }
       });
 
-      // Grafico Interazioni
       const interactionsCtx = document.getElementById('interactionsChart').getContext('2d');
       new Chart(interactionsCtx, {
         ...chartConfig,
@@ -1107,7 +1063,6 @@
         }
       });
 
-      // Grafico Like e Reazioni
       const likesCtx = document.getElementById('likesChart').getContext('2d');
       new Chart(likesCtx, {
         ...chartConfig,
