@@ -418,7 +418,7 @@
     </section>
 
     <section class="results-section" id="resultsSection">
-      <h2 class="section-title">Risultati Analisi</h2>
+      <h2 class="section-title">Risultati complessivi</h2>
       
       <div class="stats-grid" id="statsGrid" style="display: none;">
         <div class="stat-card">
@@ -508,6 +508,13 @@
           </svg>
           Scarica Report
           <span class="status-message" id="downloadStatus">Scaricato!</span>
+        </button>
+        <button class="btn btn-secondary" id="downloadHtmlBtn">
+          <svg class="btn-icon" viewBox="0 0 24 24">
+            <path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
+          </svg>
+          Scarica Report HTML
+          <span class="status-message" id="downloadHtmlStatus">Scaricato!</span>
         </button>
       </div>
     </section>
@@ -687,6 +694,205 @@
       a.click();
       URL.revokeObjectURL(url);
       showStatus('downloadBtn', 'downloadStatus');
+    });
+
+    // Aggiungi questa nuova funzione per generare il report HTML
+    function generateHtmlReport() {
+      const postCount = document.getElementById('postCount').textContent;
+      const totalViews = document.getElementById('totalViews').textContent;
+      const topicsCount = document.getElementById('topicsCount').textContent;
+      const summaryText = document.getElementById('summaryOutput').textContent;
+      
+      // Prendi i canvas dei grafici e li convertiamo in immagini
+      const impressionsCanvas = document.getElementById('impressionsChart');
+      const interactionsCanvas = document.getElementById('interactionsChart');
+      const likesCanvas = document.getElementById('likesChart');
+      
+      const impressionsImg = impressionsCanvas.toDataURL('image/png');
+      const interactionsImg = interactionsCanvas.toDataURL('image/png');
+      const likesImg = likesCanvas.toDataURL('image/png');
+      
+      const htmlContent = `
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Settimanale Social</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8f9fb;
+      color: #003B7A;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0, 59, 122, 0.08);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding: 2rem 0;
+      background: linear-gradient(135deg, #003B7A 0%, #0056B3 100%);
+      color: white;
+      border-radius: 12px;
+    }
+    .header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .header p {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+    .section {
+      margin: 2rem 0;
+    }
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #003B7A;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #FFD200;
+      padding-bottom: 0.5rem;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .stat-card {
+      background: #F8F9FB;
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid rgba(0, 59, 122, 0.1);
+    }
+    .stat-number {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #003B7A;
+    }
+    .stat-label {
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .chart-container {
+      margin: 2rem 0;
+      text-align: center;
+    }
+    .chart-container img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .chart-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1rem 0;
+      color: #003B7A;
+    }
+    .summary {
+      background: #F8F9FB;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      border-left: 4px solid #FFD200;
+    }
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .container {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Report Settimanale Social</h1>
+      <p>Analisi dell'engagement e delle performance dei contenuti</p>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-number">${postCount}</span>
+        <span class="stat-label">Post Pubblicati</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">${totalViews}</span>
+        <span class="stat-label">Visualizzazioni Totali</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">${topicsCount}</span>
+        <span class="stat-label">Argomenti Trattati</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Riepilogo Performance</h2>
+      <div class="summary">
+        ${summaryText}
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Risultati complessivi</h2>
+      <div class="chart-container">
+        <img src="${impressionsImg}" alt="Visualizzazioni per Argomento">
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Top 3 Argomenti per Performance</h2>
+      <div class="chart-container">
+        <div class="chart-title">Visualizzazioni per Argomento</div>
+        <img src="${impressionsImg}" alt="Visualizzazioni per Argomento">
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">Interazioni per Argomento</div>
+        <img src="${interactionsImg}" alt="Interazioni per Argomento">
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">Like e Reazioni per Argomento</div>
+        <img src="${likesImg}" alt="Like e Reazioni per Argomento">
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+      
+      return htmlContent;
+    }
+
+    // Aggiungi questo nuovo event listener per il pulsante di download HTML
+    document.getElementById('downloadHtmlBtn').addEventListener('click', function() {
+      const htmlContent = generateHtmlReport();
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'report_engagement.html';
+      a.click();
+      URL.revokeObjectURL(url);
+      showStatus('downloadHtmlBtn', 'downloadHtmlStatus');
     });
 
     // Funzione per creare i grafici
