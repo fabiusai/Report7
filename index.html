@@ -8,6 +8,8 @@
   <link rel="icon" type="image/png" href="seven.png">
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MODIFICA: Aggiunto il plugin per le etichette sui grafici -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * {
@@ -334,7 +336,7 @@
       padding: 1.5rem;
       text-align: center;
       border: 1px solid rgba(255, 210, 0, 0.1);
-      height: 380px;
+      height: 400px; /* Aumentata leggermente per dare spazio alle etichette */
       display: flex;
       flex-direction: column;
       width: 100%;
@@ -532,6 +534,14 @@
     const statsGrid = document.getElementById('statsGrid');
     const chartsSection = document.getElementById('chartsSection');
 
+    // Helper function moved to global scope
+    function formatNumberK(val) {
+      if (val < 1000) return val;
+      const num = val / 1000;
+      const formatted = num.toFixed(1).replace('.', ',');
+      return formatted.endsWith(',0') ? parseInt(num) + 'K' : formatted + 'K';
+    }
+
     fileInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -595,13 +605,7 @@
       const sortedLabels = Object.entries(labelMap)
         .sort((a, b) => b[1].views - a[1].views)
         .slice(0, 3);
-
-      function formatNumberK(val) {
-        const num = val / 1000;
-        const formatted = num.toFixed(1).replace('.', ',');
-        return formatted.endsWith(',0') ? parseInt(num) + 'K' : formatted + 'K';
-      }
-
+      
       const topList = sortedLabels.map(([label, data]) => {
         return label + ' (' + formatNumberK(data.views) + ' visualizzazioni)';
       }).join(', ');
@@ -908,23 +912,22 @@
           ctx.save();
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          // *** MODIFICA: Aumentata la dimensione del font a 14px ***
           ctx.font = '500 14px Inter, sans-serif'; 
           ctx.fillStyle = '#003B7A';
           
           labels.forEach((label, index) => {
             const x = xAxis.getPixelForValue(index);
-            const y = xAxis.bottom + 5;
+            const y = xAxis.bottom + 8;
             
             function wrapText(text, maxWidth) {
               const words = text.split(' ');
-              const lines = [];
+              let lines = [];
               let currentLine = words[0];
               
               for (let i = 1; i < words.length; i++) {
                 const word = words[i];
                 const width = ctx.measureText(currentLine + ' ' + word).width;
-                if (width < maxWidth) {
+                if (width < maxWidth && currentLine) {
                   currentLine += ' ' + word;
                 } else {
                   lines.push(currentLine);
@@ -932,14 +935,13 @@
                 }
               }
               lines.push(currentLine);
-              return lines;
+              return lines.filter(l => l);
             }
             
             const maxWidth = xAxis.width / labels.length - 8;
             const lines = wrapText(label, maxWidth);
             
             lines.forEach((line, lineIndex) => {
-              // *** MODIFICA: Aumentata l'interlinea a 18 per il font più grande ***
               ctx.fillText(line, x, y + lineIndex * 18);
             });
           });
@@ -947,8 +949,9 @@
           ctx.restore();
         }
       };
-
-      Chart.register(multilineLabelsPlugin);
+      
+      // MODIFICA: Registrazione del plugin per le etichette e del nostro plugin custom
+      Chart.register(multilineLabelsPlugin, ChartDataLabels);
 
       const labels = sortedLabels.map((_, index) => index);
       const viewsData = sortedLabels.map(([, data]) => data.views);
@@ -973,7 +976,7 @@
 
       const chartConfig = {
         type: 'bar',
-        plugins: [multilineLabelsPlugin],
+        plugins: [multilineLabelsPlugin, ChartDataLabels],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -994,14 +997,8 @@
               borderWidth: 1,
               cornerRadius: 8,
               padding: 12,
-              titleFont: {
-                size: 13,
-                weight: '600'
-              },
-              bodyFont: {
-                size: 12,
-                weight: '400'
-              },
+              titleFont: { size: 13, weight: '600' },
+              bodyFont: { size: 12, weight: '400' },
               callbacks: {
                 title: function(tooltipItems) {
                   const index = tooltipItems[0].dataIndex;
@@ -1009,13 +1006,21 @@
                   return truncateLabel(fullLabel);
                 },
                 label: function(context) {
-                  const value = context.parsed.y;
-                  const formattedValue = value >= 1000 ? 
-                    (value/1000).toFixed(1).replace('.', ',') + 'K' : 
-                    value.toLocaleString('it-IT');
-                  return `${formattedValue}`;
+                  return formatNumberK(context.parsed.y);
                 }
               }
+            },
+            // MODIFICA: Configurazione delle etichette sopra le colonne
+            datalabels: {
+                anchor: 'end',
+                align: 'top',
+                offset: 4,
+                color: '#003B7A',
+                font: {
+                    weight: 'bold',
+                    size: 12
+                },
+                formatter: (value) => formatNumberK(value)
             }
           },
           scales: {
@@ -1023,7 +1028,7 @@
               beginAtZero: true,
               ticks: {
                 callback: function(value) {
-                  return value >= 1000 ? (value/1000).toFixed(1) + 'K' : value;
+                  return value >= 1000 ? (value/1000).toFixed(0) + 'K' : value;
                 },
                 font: {
                   size: 12
@@ -1044,8 +1049,8 @@
           },
           layout: {
             padding: {
-              top: 15,
-              bottom: 70, 
+              top: 30, // Aumentato per dare spazio alle etichette
+              bottom: 80, 
               left: 15,
               right: 15
             }
@@ -1058,6 +1063,14 @@
           }
         }
       };
+
+      // Distruzione dei grafici precedenti se esistono
+      ['impressionsChart', 'interactionsChart', 'likesChart'].forEach(id => {
+        const chartInstance = Chart.getChart(id);
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+      });
 
       const impressionsCtx = document.getElementById('impressionsChart').getContext('2d');
       new Chart(impressionsCtx, {
