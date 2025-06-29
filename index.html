@@ -664,8 +664,7 @@
     });
 
     document.getElementById('copyTopicsBtn').addEventListener('click', function() {
-      const topicsText = 'Elenco argomenti trattati:\n' + topicsList;
-      copyToClipboard(topicsText, 'copyTopicsBtn', 'topicsStatus');
+      copyToClipboard(topicsList, 'copyTopicsBtn', 'topicsStatus');
     });
 
     document.getElementById('copyAllBtn').addEventListener('click', function() {
@@ -688,6 +687,7 @@
       const totalViews = document.getElementById('totalViews').textContent;
       const topicsCount = document.getElementById('topicsCount').textContent;
       const summaryText = document.getElementById('summaryOutput').textContent;
+      const topicsListText = topicsList;
       
       const impressionsCanvas = document.getElementById('impressionsChart');
       const interactionsCanvas = document.getElementById('interactionsChart');
@@ -798,6 +798,20 @@
       margin: 1rem 0;
       color: #003B7A;
     }
+    .topics-list {
+      background: #F8F9FB;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border-left: 4px solid #FFD200;
+    }
+    .topics-list pre {
+      font-family: inherit;
+      font-size: 1rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      color: #2C3E50;
+    }
     @media (max-width: 768px) {
       .results-grid {
         grid-template-columns: 1fr;
@@ -855,6 +869,14 @@
         <img src="${likesImg}" alt="Like e Reazioni per Argomento">
       </div>
     </div>
+    
+    <div class="section">
+      <h2 class="section-title">Elenco Completo Argomenti</h2>
+      <div class="topics-list">
+        <pre>${topicsListText}</pre>
+      </div>
+    </div>
+    
   </div>
 </body>
 </html>
@@ -886,7 +908,8 @@
           ctx.save();
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          ctx.font = '500 11px Inter, sans-serif';
+          // *** MODIFICA: Aumentata la dimensione del font a 14px ***
+          ctx.font = '500 14px Inter, sans-serif'; 
           ctx.fillStyle = '#003B7A';
           
           labels.forEach((label, index) => {
@@ -912,11 +935,12 @@
               return lines;
             }
             
-            const maxWidth = Math.min(120, xAxis.width / labels.length - 10);
+            const maxWidth = xAxis.width / labels.length - 8;
             const lines = wrapText(label, maxWidth);
             
             lines.forEach((line, lineIndex) => {
-              ctx.fillText(line, x, y + lineIndex * 14);
+              // *** MODIFICA: Aumentata l'interlinea a 18 per il font più grande ***
+              ctx.fillText(line, x, y + lineIndex * 18);
             });
           });
           
@@ -1021,7 +1045,7 @@
           layout: {
             padding: {
               top: 15,
-              bottom: 50,
+              bottom: 70, 
               left: 15,
               right: 15
             }
