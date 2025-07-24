@@ -579,44 +579,113 @@
       const postCount = json.length;
       const visualizzazioni = json.map(row => row["Total impressions"] ?? row["Video view count"] ?? 0);
       const totalViews = visualizzazioni.reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
-
+      
       const labelMap = {};
+      const priorityKeywords = ["Del Fante", "Lasco", "Rovere"];
+
       json.forEach((row) => {
-        const labelsRaw = row["Labels"];
+        const labelsRaw = row["Labels"] || '';
+        const content = row["Content"] || '';
+        const authorName = row["Author name"] || '';
+        
         const views = parseFloat(row["Total impressions"] ?? row["Video view count"] ?? 0) || 0;
         const interactions = parseFloat(row["Total interactions"] ?? 0) || 0;
         const likes = parseFloat(row["Total likes"] ?? row["Total reactions"] ?? 0) || 0;
+        
+        const isFromOtherAuthor = authorName && !authorName.includes('Poste Italiane');
+        
+        const hasPriorityTag = labelsRaw.includes('#IST');
+        const hasPriorityKeyword = priorityKeywords.some(keyword => content.includes(keyword));
+        const isPriority = hasPriorityTag || hasPriorityKeyword;
         
         if (labelsRaw) {
           const labels = labelsRaw.split(';')
             .map(l => l.trim())
             .filter(l => l && !l.startsWith('#'));
+            
           labels.forEach(label => {
-            if (!labelMap[label]) {
-              labelMap[label] = { views: 0, interactions: 0, likes: 0 };
+            const finalLabel = isFromOtherAuthor ? `${authorName} - ${label}` : label;
+
+            if (!labelMap[finalLabel]) {
+              labelMap[finalLabel] = { 
+                views: 0, 
+                interactions: 0, 
+                likes: 0, 
+                count: 0,
+                isPriority: false,
+                isFromOtherAuthor: false
+              };
             }
-            labelMap[label].views += views;
-            labelMap[label].interactions += interactions;
-            labelMap[label].likes += likes;
+
+            labelMap[finalLabel].views += views;
+            labelMap[finalLabel].interactions += interactions;
+            labelMap[finalLabel].likes += likes;
+            labelMap[finalLabel].count += 1;
+            
+            if (isPriority) {
+              labelMap[finalLabel].isPriority = true;
+            }
+            if (isFromOtherAuthor) {
+              labelMap[finalLabel].isFromOtherAuthor = true;
+            }
           });
         }
       });
 
-      const sortedLabels = Object.entries(labelMap)
+      // Ordinamento per il grafico (top 3 per visualizzazioni)
+      const sortedLabelsForChart = Object.entries(labelMap)
         .sort((a, b) => b[1].views - a[1].views)
         .slice(0, 3);
       
-      const topList = sortedLabels.map(([label, data]) => {
+      const topList = sortedLabelsForChart.map(([label, data]) => {
         return label + ' (' + formatNumberK(data.views) + ' visualizzazioni)';
       }).join(', ');
 
-      const allLabels = Object.keys(labelMap).sort();
+      // --- MODIFICA 2 (revisione): Inizio logica di ordinamento personalizzato per l'elenco completo ---
+      const sortedAllLabels = Object.entries(labelMap).sort(([labelA, dataA], [labelB, dataB]) => {
+          // Criterio primario: mettere i post di altri autori in fondo.
+          // se isFromOtherAuthor è diverso, chi è "false" (Poste Italiane) viene prima.
+          if (dataA.isFromOtherAuthor !== dataB.isFromOtherAuthor) {
+            return dataA.isFromOtherAuthor - dataB.isFromOtherAuthor; // false (0) - true (1) = -1 (A prima di B)
+          }
+
+          // Se arriviamo qui, stiamo confrontando due post dello stesso gruppo (o entrambi Poste, o entrambi Altri).
+          
+          // Se sono post di "Poste Italiane" (isFromOtherAuthor è false per entrambi)
+          if (!dataA.isFromOtherAuthor) {
+            // 1. Priorità (#IST o keywords)
+            if (dataB.isPriority !== dataA.isPriority) {
+              return dataB.isPriority - dataA.isPriority; // true (1) viene prima di false (0)
+            }
+            // 2. Numerosità (occorrenze)
+            if (dataB.count !== dataA.count) {
+              return dataB.count - dataA.count;
+            }
+            // 3. Ordine alfabetico
+            return labelA.localeCompare(labelB);
+          }
+          
+          // Se sono post di "Altri Autori" (isFromOtherAuthor è true per entrambi)
+          if (dataA.isFromOtherAuthor) {
+             // 1. Numerosità (occorrenze)
+            if (dataB.count !== dataA.count) {
+              return dataB.count - dataA.count;
+            }
+             // 2. Ordine alfabetico
+            return labelA.localeCompare(labelB);
+          }
+
+        })
+        .map(([label, data]) => label); // Estrai solo i nomi delle etichette ordinate
+
+      const allLabels = sortedAllLabels;
+      // --- MODIFICA 2 (revisione): Fine logica di ordinamento ---
 
       document.getElementById('postCount').textContent = postCount;
       document.getElementById('totalViews').textContent = formatNumberK(totalViews);
       document.getElementById('topicsCount').textContent = allLabels.length;
 
-      createCharts(sortedLabels);
+      createCharts(sortedLabelsForChart);
 
       summaryText = `Pubblicati ${postCount} post che hanno ottenuto ${formatNumberK(totalViews)} visualizzazioni organiche. Tra questi, hanno realizzato il maggior traffico organico i post dedicati a: ${topList}.`;
       
