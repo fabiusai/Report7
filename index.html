@@ -8,7 +8,6 @@
   <link rel="icon" type="image/png" href="seven.png">
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- MODIFICA: Aggiunto il plugin per le etichette sui grafici -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -336,7 +335,7 @@
       padding: 1.5rem;
       text-align: center;
       border: 1px solid rgba(255, 210, 0, 0.1);
-      height: 400px; /* Aumentata leggermente per dare spazio alle etichette */
+      height: 400px;
       display: flex;
       flex-direction: column;
       width: 100%;
@@ -575,6 +574,7 @@
       reader.readAsArrayBuffer(file);
     });
 
+    // --- FUNZIONE processData AGGIORNATA ---
     function processData(json) {
       const postCount = json.length;
       const visualizzazioni = json.map(row => row["Total impressions"] ?? row["Video view count"] ?? 0);
@@ -627,12 +627,12 @@
             }
             if (isFromOtherAuthor) {
               labelMap[finalLabel].isFromOtherAuthor = true;
+              labelMap[finalLabel].authorName = authorName; 
             }
           });
         }
       });
 
-      // Ordinamento per il grafico (top 3 per visualizzazioni)
       const sortedLabelsForChart = Object.entries(labelMap)
         .sort((a, b) => b[1].views - a[1].views)
         .slice(0, 3);
@@ -641,45 +641,50 @@
         return label + ' (' + formatNumberK(data.views) + ' visualizzazioni)';
       }).join(', ');
 
-      // --- MODIFICA 2 (revisione): Inizio logica di ordinamento personalizzato per l'elenco completo ---
+      // Logica di ordinamento personalizzato per l'elenco completo
+      const authorTopicCounts = {};
+      Object.values(labelMap).forEach(data => {
+        if (data.isFromOtherAuthor) {
+            authorTopicCounts[data.authorName] = (authorTopicCounts[data.authorName] || 0) + 1;
+        }
+      });
+
       const sortedAllLabels = Object.entries(labelMap).sort(([labelA, dataA], [labelB, dataB]) => {
-          // Criterio primario: mettere i post di altri autori in fondo.
-          // se isFromOtherAuthor è diverso, chi è "false" (Poste Italiane) viene prima.
           if (dataA.isFromOtherAuthor !== dataB.isFromOtherAuthor) {
-            return dataA.isFromOtherAuthor - dataB.isFromOtherAuthor; // false (0) - true (1) = -1 (A prima di B)
+            return dataA.isFromOtherAuthor - dataB.isFromOtherAuthor;
           }
 
-          // Se arriviamo qui, stiamo confrontando due post dello stesso gruppo (o entrambi Poste, o entrambi Altri).
-          
-          // Se sono post di "Poste Italiane" (isFromOtherAuthor è false per entrambi)
           if (!dataA.isFromOtherAuthor) {
-            // 1. Priorità (#IST o keywords)
             if (dataB.isPriority !== dataA.isPriority) {
-              return dataB.isPriority - dataA.isPriority; // true (1) viene prima di false (0)
+              return dataB.isPriority - dataA.isPriority;
             }
-            // 2. Numerosità (occorrenze)
             if (dataB.count !== dataA.count) {
               return dataB.count - dataA.count;
             }
-            // 3. Ordine alfabetico
             return labelA.localeCompare(labelB);
           }
           
-          // Se sono post di "Altri Autori" (isFromOtherAuthor è true per entrambi)
           if (dataA.isFromOtherAuthor) {
-             // 1. Numerosità (occorrenze)
-            if (dataB.count !== dataA.count) {
-              return dataB.count - dataA.count;
-            }
-             // 2. Ordine alfabetico
-            return labelA.localeCompare(labelB);
-          }
+             const authorTopicsCountA = authorTopicCounts[dataA.authorName];
+             const authorTopicsCountB = authorTopicCounts[dataB.authorName];
 
+             if (authorTopicsCountA !== authorTopicsCountB) {
+                return authorTopicsCountB - authorTopicsCountA;
+             }
+             if (dataA.authorName !== dataB.authorName) {
+                return dataA.authorName.localeCompare(dataB.authorName);
+             }
+             if (dataA.count !== dataB.count) {
+                return dataB.count - dataA.count;
+             }
+             return labelA.localeCompare(labelB);
+          }
+          
+          return 0;
         })
-        .map(([label, data]) => label); // Estrai solo i nomi delle etichette ordinate
+        .map(([label, data]) => label);
 
       const allLabels = sortedAllLabels;
-      // --- MODIFICA 2 (revisione): Fine logica di ordinamento ---
 
       document.getElementById('postCount').textContent = postCount;
       document.getElementById('totalViews').textContent = formatNumberK(totalViews);
@@ -1019,7 +1024,6 @@
         }
       };
       
-      // MODIFICA: Registrazione del plugin per le etichette e del nostro plugin custom
       Chart.register(multilineLabelsPlugin, ChartDataLabels);
 
       const labels = sortedLabels.map((_, index) => index);
@@ -1079,7 +1083,6 @@
                 }
               }
             },
-            // MODIFICA: Configurazione delle etichette sopra le colonne
             datalabels: {
                 anchor: 'end',
                 align: 'top',
@@ -1118,7 +1121,7 @@
           },
           layout: {
             padding: {
-              top: 30, // Aumentato per dare spazio alle etichette
+              top: 30,
               bottom: 80, 
               left: 15,
               right: 15
@@ -1133,7 +1136,6 @@
         }
       };
 
-      // Distruzione dei grafici precedenti se esistono
       ['impressionsChart', 'interactionsChart', 'likesChart'].forEach(id => {
         const chartInstance = Chart.getChart(id);
         if (chartInstance) {
